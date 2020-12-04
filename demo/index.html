@@ -5,7 +5,21 @@
     <title>Cesium</title>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
     <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
 
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #cesiumContainer .cesium-viewer-bottom {
+            display: none;
+        }
     </style>
     <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css">
     <script type="text/javascript" src="../Build/Cesium/Cesium.js"></script>
@@ -20,19 +34,30 @@
         var googleMap = new Cesium.UrlTemplateImageryProvider({ url: url });
         //高德
         let gaodeMap = new Cesium.UrlTemplateImageryProvider({
-            url: "https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+            url: "https://webst{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&style=6", // 添加高德影像
+            subdomains: ["01", "02", "03", "04"] //多域名请求
         });
-        //天地图 
-        let tiandi = new Cesium.UrlTemplateImageryProvider({
-            url: "http://t0.tianditu.gov.cn/img_w/wmts?tk=82417b54cd58a7c412720684ded669c4"
-        });
+
 
         // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
         const viewer = new Cesium.Viewer('cesiumContainer', {
             terrainProvider: Cesium.createWorldTerrain(),
             baseLayerPicker: false, //是否显示图层选择控件
-            imageryProvider: tiandi,
         });
+
+        //天地图 
+        let tiandi = new Cesium.UrlTemplateImageryProvider(createTdtiImageryProvider());
+        function createTdtiImageryProvider() {
+            viewer.imageryLayers.addImageryProvider(
+                new Cesium.WebMapTileServiceImageryProvider({
+                    url: 'http://t0.tianditu.gov.cn/img_w/wmts?tk=82417b54cd58a7c412720684ded669c4',
+                    layer: 'img',
+                    style: 'default',
+                    tileMatrixSetID: 'w',
+                    format: 'tiles',
+                    maximumLevel: 18
+                }));
+        }
 
         //导入自定义3d模型
         var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
