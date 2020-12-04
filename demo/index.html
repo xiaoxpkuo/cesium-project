@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Cesium</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <style>
+
+    </style>
+    <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css">
+    <script type="text/javascript" src="../Build/Cesium/Cesium.js"></script>
+</head>
+
+<body style="background-color: #f5f7f9">
+    <div id="cesiumContainer"></div>
+    <script type="text/javascript">
+
+        //谷歌地图
+        var url = "http://mt1.google.cn/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}&s=Gali";
+        var googleMap = new Cesium.UrlTemplateImageryProvider({ url: url });
+
+        // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain(),
+            baseLayerPicker: false, //是否显示图层选择控件
+            imageryProvider: googleMap,
+        });
+
+        //导入自定义3d模型
+        var modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
+            Cesium.Cartesian3.fromDegrees(122.2825, 30.1011, 0));
+        var model = viewer.scene.primitives.add(Cesium.Model.fromGltf({
+            url: './model.gltf',//如果为bgltf则为.bgltf
+            modelMatrix: modelMatrix,
+            scale: 1.0
+        }));
+
+        //初始化视角
+        viewer.camera.flyTo({
+            destination: new Cesium.Cartesian3(-2950893.028170696, 4669783.822555832, 3179351.469774689),
+            orientation: {
+                heading: 5.920526809901984, // east, default value is 0.0 (north)
+                pitch: -0.5231948544598866,    // default value (looking down)
+                roll: 0.0                             // default value
+            }
+        })
+
+        //获取经纬度
+        getPosition = (viewer) => {
+            //得到当前三维场景
+            var scene = viewer.scene;
+            //得到当前三维场景的椭球体
+            var ellipsoid = scene.globe.ellipsoid;
+            var entity = viewer.entities.add({
+                label: {
+                    show: false
+                }
+            });
+            var longitudeString = null;
+            var latitudeString = null;
+            var height = null;
+            var cartesian = null;
+            // 定义当前场景的画布元素的事件处理
+            var handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+            //设置鼠标移动事件的处理函数，这里负责监听x,y坐标值变化
+            handler.setInputAction(function (movement) {
+                //通过指定的椭球或者地图对应的坐标系，将鼠标的二维坐标转换为对应椭球体三维坐标
+                cartesian = viewer.camera.pickEllipsoid(movement.endPosition, ellipsoid);
+                if (cartesian) {
+                    //将笛卡尔坐标转换为地理坐标
+                    var cartographic = ellipsoid.cartesianToCartographic(cartesian);
+                    //将弧度转为度的十进制度表示
+                    longitudeString = Cesium.Math.toDegrees(cartographic.longitude);
+                    latitudeString = Cesium.Math.toDegrees(cartographic.latitude);
+                    //获取相机高度
+                    height = Math.ceil(viewer.camera.positionCartographic.height);
+                    entity.position = cartesian;
+                    entity.label.show = true;
+                    entity.label.text = '(' + longitudeString + ', ' + latitudeString + "," + height + ')';
+                } else {
+                    entity.label.show = false;
+                }
+            }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+            //设置鼠标滚动事件的处理函数，这里负责监听高度值变化
+            handler.setInputAction(function (wheelment) {
+                height = Math.ceil(viewer.camera.positionCartographic.height);
+                entity.position = cartesian;
+                entity.label.show = true;
+                entity.label.text = '(' + longitudeString + ', ' + latitudeString + "," + height + ')';
+                entity.label.fillColor = Cesium.Color.BLACK;
+            }, Cesium.ScreenSpaceEventType.WHEEL);
+        }
+
+    //getPosition(viewer);
+
+    </script>
+</body>
+
+</html>
