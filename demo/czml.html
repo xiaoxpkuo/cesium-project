@@ -2,194 +2,335 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
-  <meta name="description" content="A CZML example showing a single entity path split across multiple CZML streams." />
-  <meta name="cesium-sandcastle-labels" content="Showcases, DataSources, CZML" />
-  <title>Cesium CZML Demo</title>
-  <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css">
-  <script type="text/javascript" src="../Build/Cesium/Cesium.js"></script>
-  <script type="module" src="../Apps/Sandcastle/load-cesium-es6.js"></script>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+    <meta name="description" content="A CZML example showing a single entity path split across multiple CZML streams." />
+    <meta name="cesium-sandcastle-labels" content="Showcases, DataSources, CZML" />
+    <title>Cesium CZML Demo</title>
+    <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css">
+    <script type="text/javascript" src="../Build/Cesium/Cesium.js"></script>
+    <script type="module" src="../Apps/Sandcastle/load-cesium-es6.js"></script>
 </head>
 
 <body class="sandcastle-loading" data-sandcastle-bucket="bucket-requirejs.html">
-  <style>
-    @import url(../Apps/Sandcastle/templates/bucket.css);
-  </style>
-  <div id="cesiumContainer" class="fullSize"></div>
-  <!-- <div id="loadingOverlay">
+    <style>
+        @import url(../Apps/Sandcastle/templates/bucket.css);
+    </style>
+    <div id="cesiumContainer" class="fullSize"></div>
+    <!-- <div id="loadingOverlay">
     <h1>Loading...</h1>
   </div> -->
-  <div id="toolbar"></div>
+    <div id="toolbar"></div>
 
-  <script id="cesium_sandcastle_script">
-    function startup(Cesium) {
-      "use strict";
-      //Sandcastle_Begin
-      var viewer = new Cesium.Viewer("cesiumContainer", {
-        shouldAnimate: true,
-      });
+    <script id="cesium_sandcastle_script">
+        function startup(Cesium) {
+            "use strict";
+            //Sandcastle_Begin
+            var viewer = new Cesium.Viewer("cesiumContainer", {
+                shouldAnimate: true,
+            });
+            window.viewer = viewer;
 
-      var statusDisplay = document.createElement("div");
-      var fuelDisplay = document.createElement("div");
-      var czmlPath = "./";
-      var vehicleEntity;
+            viewer.camera.setView({
+                destination: Cesium.Cartesian3.fromDegrees(116.37, 39.84, 8000.0),
+                orientation: {
+                    heading: 0.34348428169356016, // east, default value is 0.0 (north)
+                    pitch: -0.8022455061718503, // default value (looking down)
+                    roll: 0.0 // default value
+                }
+            });
+            var helper = new Cesium.EventHelper();
+            helper.add(viewer.scene.globe.tileLoadProgressEvent, function(event) {
+                //console.log('每次加载矢量切片都会进入这个回调');
+                if (event == 0) {
+                    //console.log(“这个是加载最后一个矢量切片的回调”);
+                    renderCZML()
+                }
+            });
 
-      // Add a blank CzmlDataSource to hold our multi-part entity/entities.
-      var dataSource = new Cesium.CzmlDataSource();
-      viewer.dataSources.add(dataSource);
 
-      // This demo shows how a single path can be broken up into several CZML streams.
-      var partsToLoad = [
-        {
-          url: "MultipartVehicle_part1.czml",
-          range: [0, 1500],
-          requested: false,
-          loaded: false,
-        },
-        // {
-        //   url: "MultipartVehicle_part2.czml",
-        //   range: [1500, 3000],
-        //   requested: false,
-        //   loaded: false,
-        // },
-        // {
-        //   url: "MultipartVehicle_part3.czml",
-        //   range: [3000, 4500],
-        //   requested: false,
-        //   loaded: false,
-        // },
-      ];
+            function renderCZML() {
 
-      function updateStatusDisplay() {
-        var msg = "";
-        partsToLoad.forEach(function (part) {
-          msg += part.url + " - ";
-          if (part.loaded) {
-            msg += "Loaded.<br/>";
-          } else if (part.requested) {
-            msg += "Loading now...<br/>";
-          } else {
-            msg += "Not needed yet.<br/>";
-          }
-        });
-        statusDisplay.innerHTML = msg;
-      }
 
-      // Helper function to mark a part as requested, and process it into the dataSource.
-      function processPart(part) {
-        part.requested = true;
-        updateStatusDisplay();
-        dataSource.process(czmlPath + part.url).then(function () {
-          part.loaded = true;
-          updateStatusDisplay();
+                var statusDisplay = document.createElement("div");
+                var fuelDisplay = document.createElement("div");
+                var czmlPath = "./";
+                var vehicleEntity;
 
-          // Follow the vehicle with the camera.
-          if (!viewer.trackedEntity) {
-            viewer.trackedEntity = vehicleEntity = dataSource.entities.getById(
-              "Vehicle"
-            );
-          }
-        });
-      }
+                // Add a blank CzmlDataSource to hold our multi-part entity/entities.
+                var dataSource = new Cesium.CzmlDataSource();
+                viewer.dataSources.add(dataSource);
 
-      // Load the first part up front.
-      processPart(partsToLoad[0]);
+                // This demo shows how a single path can be broken up into several CZML streams.
+                var partsToLoad = [{
+                        url: "MultipartVehicle_part1.czml",
+                        range: [0, 1500],
+                        requested: false,
+                        loaded: false,
+                    },
+                    // {
+                    //   url: "MultipartVehicle_part2.czml",
+                    //   range: [1500, 3000],
+                    //   requested: false,
+                    //   loaded: false,
+                    // },
+                    // {
+                    //   url: "MultipartVehicle_part3.czml",
+                    //   range: [3000, 4500],
+                    //   requested: false,
+                    //   loaded: false,
+                    // },
+                ];
 
-      // Load a new section before the clock naturally gets there.
-      // Note this can't predict when a user may fast-forward to it.
-      var preloadTimeInSeconds = 100;
+                function updateStatusDisplay() {
+                    var msg = "";
+                    partsToLoad.forEach(function(part) {
+                        msg += part.url + " - ";
+                        if (part.loaded) {
+                            msg += "Loaded.<br/>";
+                        } else if (part.requested) {
+                            msg += "Loading now...<br/>";
+                        } else {
+                            msg += "Not needed yet.<br/>";
+                        }
+                    });
+                    statusDisplay.innerHTML = msg;
+                }
 
-      viewer.clock.onTick.addEventListener(function (clock) {
-        // This example uses time offsets from the start to identify which parts need loading.
-        var timeOffset = Cesium.JulianDate.secondsDifference(
-          clock.currentTime,
-          clock.startTime
-        );
+                // Helper function to mark a part as requested, and process it into the dataSource.
+                function processPart(part) {
+                    part.requested = true;
+                    updateStatusDisplay();
+                    //dataSource.process(czmlPath + part.url).then(function () {
+                    dataSource.load(CZMLObject).then(function() {
+                        part.loaded = true;
+                        updateStatusDisplay();
 
-        // Filter the list of parts to just the ones that need loading right now.
-        // Then, process each part that needs loading.
-        partsToLoad
-          .filter(function (part) {
-            return (
-              !part.requested &&
-              timeOffset >= part.range[0] - preloadTimeInSeconds &&
-              timeOffset <= part.range[1]
-            );
-          })
-          .forEach(function (part) {
-            processPart(part);
-          });
+                        // Follow the vehicle with the camera.
+                        /*if (!viewer.trackedEntity) {
+                          viewer.trackedEntity = vehicleEntity = dataSource.entities.getById(
+                            "taxi2"
+                          );
+                        }
+                        */
 
-        if (vehicleEntity) {
-          var fuel = vehicleEntity.properties.fuel_remaining.getValue(
-            clock.currentTime
-          );
-          if (Cesium.defined(fuel)) {
-            fuelDisplay.textContent = "Fuel: " + fuel.toFixed(2) + " gal";
-          }
+                    });
+                }
+
+                // Load the first part up front.
+                processPart(partsToLoad[0]);
+
+
+                // Load a new section before the clock naturally gets there.
+                // Note this can't predict when a user may fast-forward to it.
+                var preloadTimeInSeconds = 100;
+
+                viewer.clock.onTick.addEventListener(function(clock) {
+                    // This example uses time offsets from the start to identify which parts need loading.
+                    var timeOffset = Cesium.JulianDate.secondsDifference(
+                        clock.currentTime,
+                        clock.startTime
+                    );
+
+                    // Filter the list of parts to just the ones that need loading right now.
+                    // Then, process each part that needs loading.
+                    partsToLoad
+                        .filter(function(part) {
+                            return (!part.requested &&
+                                timeOffset >= part.range[0] - preloadTimeInSeconds &&
+                                timeOffset <= part.range[1]
+                            );
+                        })
+                        .forEach(function(part) {
+                            processPart(part);
+                        });
+
+                    if (vehicleEntity) {
+                        var fuel = vehicleEntity.properties.fuel_remaining.getValue(
+                            clock.currentTime
+                        );
+                        if (Cesium.defined(fuel)) {
+                            fuelDisplay.textContent = "Fuel: " + fuel.toFixed(2) + " gal";
+                        }
+                    }
+                });
+
+                // Add a reset button, for convenience.
+                // Put things back to the starting position.
+                viewer.clock.currentTime = viewer.clock.startTime;
+                viewer.clock.shouldAnimate = true;
+
+                partsToLoad.forEach(function(part) {
+                    part.requested = false;
+                    part.loaded = false;
+                });
+
+                dataSource.entities.removeAll();
+                processPart(partsToLoad[0]);
+
+                // Show the status display below the reset button.
+                statusDisplay.style.background = "rgba(42, 42, 42, 0.7)";
+                statusDisplay.style.padding = "5px 10px";
+                document.getElementById("toolbar").appendChild(statusDisplay);
+
+                // Show a multi-part custom property being read from CZML.
+                fuelDisplay.style.background = "rgba(42, 42, 42, 0.7)";
+                fuelDisplay.style.padding = "5px 10px";
+                fuelDisplay.style.marginTop = "5px";
+                document.getElementById("toolbar").appendChild(fuelDisplay);
+                //Sandcastle_End
+            }
         }
-      });
+        if (typeof Cesium !== "undefined") {
+            window.startupCalled = true;
+            //加载数据
 
-      // Add a reset button, for convenience.
-      // Put things back to the starting position.
-      viewer.clock.currentTime = viewer.clock.startTime;
-      viewer.clock.shouldAnimate = true;
+            var promiseList = [];
+            var urlArr = [];
+            var CZMLObject = [];
+            //加载1.txt ~ 10.txt 数据
+            for (var i = 1; i < 11; i++) {
+                urlArr.push('./' + i + '.txt');
+            }
+            createPromise(urlArr);
 
-      partsToLoad.forEach(function (part) {
-        part.requested = false;
-        part.loaded = false;
-      });
+            function createPromise(urlArr) {
+                urlArr.forEach(function(path) {
+                    var p = new Promise((resolve, reject) => {
+                        Cesium.Resource.fetch(path).then(function(jsonData) {
+                            //获取到数据 清洗数据 生成czml配置返回
+                            //console.log(jsonData.split(/\n/));
+                            var result1 = jsonData.split(/\n/);
+                            result1.pop();
+                            resolve(DegreesToCZML(result1));
+                        })
+                    })
+                    promiseList.push(p);
+                })
+            }
 
-      dataSource.entities.removeAll();
-      processPart(partsToLoad[0]);
 
-      // Show the status display below the reset button.
-      statusDisplay.style.background = "rgba(42, 42, 42, 0.7)";
-      statusDisplay.style.padding = "5px 10px";
-      document.getElementById("toolbar").appendChild(statusDisplay);
+            Promise.all(promiseList).then((result) => {
+                // 获取已生成的czml配置数组
+                //console.log(result);
+                CZMLObject.push({
+                    "id": "document",
+                    "version": "1.0"
+                });
+                result.forEach(function(cartesian, index) {
+                    //初始化 个性化数据 小车id名称路径颜色
+                    var id = 'taxi' + index;
+                    var colorRgba = [];
+                    for (var i = 0; i < 3; i++) {
+                        colorRgba.push(Math.floor(Math.random() * (255 - 1 + 1) + 1))
+                    }
+                    colorRgba.push(100)
 
-      // Show a multi-part custom property being read from CZML.
-      fuelDisplay.style.background = "rgba(42, 42, 42, 0.7)";
-      fuelDisplay.style.padding = "5px 10px";
-      fuelDisplay.style.marginTop = "5px";
-      document.getElementById("toolbar").appendChild(fuelDisplay);
-      //Sandcastle_End
-    }
-    if (typeof Cesium !== "undefined") {
-      window.startupCalled = true;
-      startup(Cesium);
-    }
+                    var czmlItemObj = {
+                        "id": id,
+                        "availability": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                        "label": {
+                            "fillColor": [{
+                                "interval": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                                "rgba": colorRgba
+                            }],
+                            "font": "bold 10pt Segoe UI Semibold",
+                            "horizontalOrigin": "CENTER",
+                            "outlineColor": {
+                                "rgba": [
+                                    0, 0, 0, 1
+                                ]
+                            },
+                            "pixelOffset": {
+                                "cartesian2": [
+                                    0.0, 20.0
+                                ]
+                            },
+                            "scale": 1.0,
+                            "show": [{
+                                "interval": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                                "boolean": true
+                            }],
+                            "style": "FILL",
+                            "text": id,
+                            "verticalOrigin": "CENTER"
+                        },
+                        "model": {
+                            "gltf": "../Apps/SampleData/models/CesiumMilkTruck/CesiumMilkTruck.glb",
+                            "minimumPixelSize": 100,
+                            "maximumScale": 50
+                        },
+                        "orientation": {
+                            "velocityReference": "#position"
+                        },
+                        "viewFrom": {
+                            "cartesian": [-2080, -1715, 779]
+                        },
+                        "properties": {
+                            "fuel_remaining": {
+                                "epoch": "2008-02-02T07:30:00Z",
+                                "number": [
+                                    0, 22.5,
+                                    1500, 21.2
+                                ]
+                            }
+                        },
+                        "path": {
+                            "material": {
+                                "solidColor": {
+                                    "color": {
+                                        "interval": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                                        "rgba": colorRgba
+                                    }
+                                }
+                            },
+                            "width": [{
+                                "interval": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                                "number": 5.0
+                            }],
+                            "show": [{
+                                "interval": "2008-02-02T07:30:00Z/2008-02-08T18:00:00Z",
+                                "boolean": true
+                            }]
+                        },
+                        "position": {
+                            "cartesian": cartesian
+                        }
+                    }
+                    CZMLObject.push(czmlItemObj)
+                });
 
-    //数据转换测试
-    var s = '1,2008-02-02 15:36:08,116.51172,39.92123>1,2008-02-02 15:46:08,116.51135,39.93883>1,2008-02-02 15:46:08,116.51135,39.93883>1,2008-02-02 15:56:08,116.51627,39.91034>1,2008-02-02 16:06:08,116.47186,39.91248>1,2008-02-02 16:16:08,116.47217,39.92498>1,2008-02-02 16:26:08,116.47179,39.90718>1,2008-02-02 16:36:08,116.45617,39.90531>';
+                startup(Cesium);
+            }).catch((error) => {
+                //console.log(error)
+            })
 
-    var s1 = s.split('>');
-    s1.pop();
-    function DegreesToCZML(s1) {
 
-      var arr = [];
-      s1.forEach(function (item) {
-        var s1Arr = item.split(',');
-        //添加时间
-        arr.push(new Date(s1Arr[1]).toISOString());
 
-        //new Date('2008-02-02 17:00:24').toISOString()
-        //post
+        }
 
-        var postObj = Cesium.Cartesian3.fromDegrees(Number(s1Arr[2]), Number(s1Arr[3]));
-        arr.push(postObj.x);
-        arr.push(postObj.y);
-        arr.push(postObj.z);
-      });
+        //数据转换
+        function DegreesToCZML(s1) {
 
-      return arr;
-    }
+            var arr = [];
+            s1.forEach(function(item) {
+                var s1Arr = item.split(',');
+                //添加时间
+                arr.push(new Date(s1Arr[1]).toISOString());
 
-    console.log(s + '\n--->\n' + JSON.stringify(DegreesToCZML(s1)));
-  </script>
+                //new Date('2008-02-02 17:00:24').toISOString()
+                //post
+
+                var postObj = Cesium.Cartesian3.fromDegrees(Number(s1Arr[2]), Number(s1Arr[3]));
+                arr.push(postObj.x);
+                arr.push(postObj.y);
+                arr.push(postObj.z);
+            });
+
+            return arr;
+        }
+    </script>
 </body>
 
 </html>
